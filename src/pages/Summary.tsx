@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -204,7 +203,7 @@ const SummaryPage = () => {
         
         <Card className="mb-6">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle>Bill Summary</CardTitle>
+            <CardTitle>Participant Summary</CardTitle>
             <div className="text-sm text-muted-foreground">
               {summary.session.bill.charges.total > 0 && 
                 `${formatCurrency(totalPaid, summary.session.bill.currency)} of ${formatCurrency(summary.session.bill.charges.total, summary.session.bill.currency)} paid`

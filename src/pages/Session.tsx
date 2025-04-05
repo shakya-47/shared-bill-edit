@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -243,12 +242,38 @@ const SessionPage = () => {
               {formatTimeLeft()}
             </div>
             {isOrganizer() && (
-              <Button 
-                variant="outline"
-                onClick={() => navigate(`/summary/${session.id}`)}
-              >
-                View Summary
-              </Button>
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate(`/summary/${session.id}`)}
+                >
+                  View Summary
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    // Set current participant to the first participant
+                    const firstParticipant = session.participants[0];
+                    setCurrentParticipant(firstParticipant);
+                    setParticipantName(firstParticipant.name);
+                    setParticipantEmail(firstParticipant.email || '');
+                  }}
+                >
+                  Add my contribution
+                </Button>
+                {session.participants.every(p => p.submitted) && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const upiLink = 'upi://pay?pa=upiaddress@okhdfcbank&pn=JohnDoe&cu=INR';
+                      navigator.clipboard.writeText(upiLink);
+                      toast.success('Payment link copied to clipboard');
+                    }}
+                  >
+                    Generate Payment Link
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
