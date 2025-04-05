@@ -41,6 +41,7 @@ export interface Participant {
   name: string;
   email: string;
   selections?: ParticipantSelection[];
+  submitted?: boolean; // Track if participant has submitted their selections
   amountDue?: number;
   paid?: boolean;
 }

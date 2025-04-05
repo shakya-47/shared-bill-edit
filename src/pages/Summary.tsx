@@ -6,6 +6,7 @@ import { Session, SessionSummary } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SummaryBreakdown from '@/components/SummaryBreakdown';
+import { CheckIcon, AlertCircleIcon } from 'lucide-react';
 
 const SummaryPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -102,72 +103,117 @@ const SummaryPage = () => {
             </Button>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bill Summary</CardTitle>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left border-b">
-                      <th className="pb-2">Participant</th>
-                      <th className="pb-2 text-right">Items</th>
-                      <th className="pb-2 text-right">Tax & Service</th>
-                      <th className="pb-2 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.participants.map((participant) => (
-                      <tr key={participant.id} className="border-b">
-                        <td className="py-3">
-                          <div className="font-medium">{participant.name}</div>
-                          {participant.email && (
-                            <div className="text-xs text-muted-foreground">{participant.email}</div>
-                          )}
-                        </td>
-                        <td className="py-3 text-right">
-                          {formatCurrency(participant.subTotal, summary.session.bill.currency)}
-                        </td>
-                        <td className="py-3 text-right">
-                          {formatCurrency(
-                            participant.tax + participant.serviceCharge - participant.discount, 
-                            summary.session.bill.currency
-                          )}
-                        </td>
-                        <td className="py-3 text-right font-medium">
-                          {formatCurrency(participant.total, summary.session.bill.currency)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td colSpan={3} className="pt-3 font-medium">Total</td>
-                      <td className="pt-3 text-right font-medium">
-                        {formatCurrency(summary.session.bill.charges.total, summary.session.bill.currency)}
+
+        {/* Participant Submission Status */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Participant Status</CardTitle>
+          </CardHeader>
+          
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="pb-2">Participant</th>
+                    <th className="pb-2 text-right">Status</th>
+                    <th className="pb-2 text-right">Items Selected</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.participants.map((participant) => (
+                    <tr key={participant.id} className="border-b">
+                      <td className="py-3">
+                        <div className="font-medium">{participant.name}</div>
+                        {participant.email && (
+                          <div className="text-xs text-muted-foreground">{participant.email}</div>
+                        )}
+                      </td>
+                      <td className="py-3 text-right">
+                        {participant.submitted ? (
+                          <span className="inline-flex items-center text-green-600">
+                            <CheckIcon className="h-4 w-4 mr-1" /> Submitted
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-yellow-600">
+                            <AlertCircleIcon className="h-4 w-4 mr-1" /> Pending
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 text-right">
+                        {participant.items?.length || 0}
                       </td>
                     </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Bill Summary</CardTitle>
+          </CardHeader>
           
-          <h2 className="text-2xl font-bold mt-6 mb-4">Individual Breakdowns</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {summary.participants.map((participant) => (
-              <SummaryBreakdown 
-                key={participant.id}
-                participant={participant}
-                currency={summary.session.bill.currency}
-              />
-            ))}
-          </div>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="pb-2">Participant</th>
+                    <th className="pb-2 text-right">Items</th>
+                    <th className="pb-2 text-right">Tax & Service</th>
+                    <th className="pb-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.participants.map((participant) => (
+                    <tr key={participant.id} className="border-b">
+                      <td className="py-3">
+                        <div className="font-medium">{participant.name}</div>
+                        {participant.email && (
+                          <div className="text-xs text-muted-foreground">{participant.email}</div>
+                        )}
+                      </td>
+                      <td className="py-3 text-right">
+                        {formatCurrency(participant.subTotal, summary.session.bill.currency)}
+                      </td>
+                      <td className="py-3 text-right">
+                        {formatCurrency(
+                          participant.tax + participant.serviceCharge - participant.discount, 
+                          summary.session.bill.currency
+                        )}
+                      </td>
+                      <td className="py-3 text-right font-medium">
+                        {formatCurrency(participant.total, summary.session.bill.currency)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={3} className="pt-3 font-medium">Total</td>
+                    <td className="pt-3 text-right font-medium">
+                      {formatCurrency(summary.session.bill.charges.total, summary.session.bill.currency)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <h2 className="text-2xl font-bold mt-6 mb-4">Individual Breakdowns</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {summary.participants.map((participant) => (
+            <SummaryBreakdown 
+              key={participant.id}
+              participant={participant}
+              currency={summary.session.bill.currency}
+            />
+          ))}
         </div>
       </div>
     </div>

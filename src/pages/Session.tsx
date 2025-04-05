@@ -21,6 +21,7 @@ const SessionPage = () => {
   const [participantEmail, setParticipantEmail] = useState('');
   const [currentParticipant, setCurrentParticipant] = useState<Participant | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   
   // Load session data
   useEffect(() => {
@@ -93,7 +94,13 @@ const SessionPage = () => {
     
     if (existingParticipant) {
       setCurrentParticipant(existingParticipant);
-      toast.success(`Welcome back, ${existingParticipant.name}!`);
+      // Check if this participant has already submitted their selections
+      if (existingParticipant.submitted) {
+        setSubmitted(true);
+        toast.info("You've already submitted your selections");
+      } else {
+        toast.success(`Welcome back, ${existingParticipant.name}!`);
+      }
     } else {
       toast.error('Your name is not in the participant list');
     }
@@ -122,6 +129,37 @@ const SessionPage = () => {
     // Save to storage
     updateSessionInStorage(updatedSession);
   };
+
+  const handleSubmitSelections = () => {
+    if (!session || !currentParticipant) return;
+    
+    // Mark this participant as submitted
+    const updatedParticipants = session.participants.map(p => 
+      p.id === currentParticipant.id ? { 
+        ...p, 
+        selections: currentParticipant.selections || [],
+        submitted: true 
+      } : p
+    );
+    
+    const updatedSession = {
+      ...session,
+      participants: updatedParticipants
+    };
+    
+    // Update in-memory state
+    setSession(updatedSession);
+    setCurrentParticipant({
+      ...currentParticipant,
+      submitted: true
+    });
+    setSubmitted(true);
+    
+    // Save to storage
+    updateSessionInStorage(updatedSession);
+    
+    toast.success('Your selections have been submitted!');
+  };
   
   const updateSessionInStorage = (updatedSession: Session) => {
     try {
@@ -141,6 +179,10 @@ const SessionPage = () => {
     const minutes = Math.floor(timeLeft / 60000);
     const seconds = Math.floor((timeLeft % 60000) / 1000);
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+  
+  const isOrganizer = () => {
+    return session?.organizer === currentParticipant?.name;
   };
   
   if (loading) {
@@ -200,12 +242,14 @@ const SessionPage = () => {
             }`}>
               {formatTimeLeft()}
             </div>
-            <Button 
-              variant="outline"
-              onClick={() => navigate(`/summary/${session.id}`)}
-            >
-              View Summary
-            </Button>
+            {isOrganizer() && (
+              <Button 
+                variant="outline"
+                onClick={() => navigate(`/summary/${session.id}`)}
+              >
+                View Summary
+              </Button>
+            )}
           </div>
         </div>
         
@@ -289,12 +333,40 @@ const SessionPage = () => {
                 </div>
               </CardContent>
             </Card>
+          ) : submitted ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Thank You!</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center space-y-4">
+                  <p className="text-muted-foreground">
+                    Your selections have been successfully submitted. The session organizer can view your contributions.
+                  </p>
+                  <p className="text-muted-foreground">
+                    When the session is complete, you'll be able to view the final breakdown.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
-            <ItemList
-              bill={session.bill}
-              participant={currentParticipant}
-              onChange={updateParticipantSelections}
-            />
+            <>
+              <ItemList
+                bill={session.bill}
+                participant={currentParticipant}
+                onChange={updateParticipantSelections}
+              />
+              
+              <div className="flex justify-end">
+                <Button 
+                  onClick={handleSubmitSelections}
+                  size="lg"
+                  className="mt-4"
+                >
+                  Submit Selections
+                </Button>
+              </div>
+            </>
           )}
         </div>
       </div>
