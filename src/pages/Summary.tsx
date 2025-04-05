@@ -1,12 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { calculateSessionSummary, formatCurrency } from '@/utils/calculations';
-import { Session, SessionSummary } from '@/types';
+import { Session, SessionSummary, ParticipantSummary } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableFooter } from '@/components/ui/table';
 import SummaryBreakdown from '@/components/SummaryBreakdown';
-import { CheckIcon, AlertCircleIcon } from 'lucide-react';
+import { CheckIcon, AlertCircleIcon, WalletCardsIcon } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 const SummaryPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +57,46 @@ const SummaryPage = () => {
   
   const copySessionLink = () => {
     navigator.clipboard.writeText(getSessionShareUrl());
+    toast.success('Share link copied to clipboard');
+  };
+  
+  const togglePaymentStatus = (participantId: string) => {
+    if (!summary) return;
+    
+    // Update participant's payment status
+    const updatedParticipants = summary.participants.map(participant => 
+      participant.id === participantId 
+        ? { ...participant, paid: !participant.paid }
+        : participant
+    );
+    
+    // Update the session in localStorage
+    const existingSessions = JSON.parse(localStorage.getItem('splitSessions') || '[]');
+    const updatedSessions = existingSessions.map((session: Session) => {
+      if (session.id === id) {
+        return {
+          ...session,
+          participants: session.participants.map(p => {
+            const updatedParticipant = updatedParticipants.find(up => up.id === p.id);
+            return updatedParticipant ? { ...p, paid: updatedParticipant.paid } : p;
+          })
+        };
+      }
+      return session;
+    });
+    
+    localStorage.setItem('splitSessions', JSON.stringify(updatedSessions));
+    
+    // Update local state
+    setSummary({
+      ...summary,
+      participants: updatedParticipants
+    });
+    
+    const participant = updatedParticipants.find(p => p.id === participantId);
+    if (participant) {
+      toast.success(`${participant.name} marked as ${participant.paid ? 'paid' : 'unpaid'}`);
+    }
   };
   
   if (loading) {
@@ -79,6 +122,14 @@ const SummaryPage = () => {
       </div>
     );
   }
+  
+  const totalPaid = summary.participants
+    .filter(p => p.paid)
+    .reduce((sum, p) => sum + p.total, 0);
+  
+  const totalUnpaid = summary.participants
+    .filter(p => !p.paid)
+    .reduce((sum, p) => sum + p.total, 0);
   
   return (
     <div className="main-container min-h-screen pb-16">
@@ -112,24 +163,24 @@ const SummaryPage = () => {
           
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left border-b">
-                    <th className="pb-2">Participant</th>
-                    <th className="pb-2 text-right">Status</th>
-                    <th className="pb-2 text-right">Items Selected</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Participant</TableHead>
+                    <TableHead className="text-right">Status</TableHead>
+                    <TableHead className="text-right">Items Selected</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {summary.participants.map((participant) => (
-                    <tr key={participant.id} className="border-b">
-                      <td className="py-3">
+                    <TableRow key={participant.id}>
+                      <TableCell>
                         <div className="font-medium">{participant.name}</div>
                         {participant.email && (
                           <div className="text-xs text-muted-foreground">{participant.email}</div>
                         )}
-                      </td>
-                      <td className="py-3 text-right">
+                      </TableCell>
+                      <TableCell className="text-right">
                         {participant.submitted ? (
                           <span className="inline-flex items-center text-green-600">
                             <CheckIcon className="h-4 w-4 mr-1" /> Submitted
@@ -139,67 +190,98 @@ const SummaryPage = () => {
                             <AlertCircleIcon className="h-4 w-4 mr-1" /> Pending
                           </span>
                         )}
-                      </td>
-                      <td className="py-3 text-right">
+                      </TableCell>
+                      <TableCell className="text-right">
                         {participant.items?.length || 0}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
+        <Card className="mb-6">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle>Bill Summary</CardTitle>
+            <div className="text-sm text-muted-foreground">
+              {summary.session.bill.charges.total > 0 && 
+                `${formatCurrency(totalPaid, summary.session.bill.currency)} of ${formatCurrency(summary.session.bill.charges.total, summary.session.bill.currency)} paid`
+              }
+            </div>
           </CardHeader>
           
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left border-b">
-                    <th className="pb-2">Participant</th>
-                    <th className="pb-2 text-right">Items</th>
-                    <th className="pb-2 text-right">Tax & Service</th>
-                    <th className="pb-2 text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Participant</TableHead>
+                    <TableHead className="text-right">Items</TableHead>
+                    <TableHead className="text-right">Tax & Service</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Payment</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {summary.participants.map((participant) => (
-                    <tr key={participant.id} className="border-b">
-                      <td className="py-3">
+                    <TableRow key={participant.id}>
+                      <TableCell>
                         <div className="font-medium">{participant.name}</div>
                         {participant.email && (
                           <div className="text-xs text-muted-foreground">{participant.email}</div>
                         )}
-                      </td>
-                      <td className="py-3 text-right">
+                      </TableCell>
+                      <TableCell className="text-right">
                         {formatCurrency(participant.subTotal, summary.session.bill.currency)}
-                      </td>
-                      <td className="py-3 text-right">
+                      </TableCell>
+                      <TableCell className="text-right">
                         {formatCurrency(
                           participant.tax + participant.serviceCharge - participant.discount, 
                           summary.session.bill.currency
                         )}
-                      </td>
-                      <td className="py-3 text-right font-medium">
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
                         {formatCurrency(participant.total, summary.session.bill.currency)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end">
+                          <Switch 
+                            checked={participant.paid || false}
+                            onCheckedChange={() => togglePaymentStatus(participant.id)}
+                            className="mr-2"
+                          />
+                          <span className={`text-sm ${participant.paid ? 'text-green-600' : 'text-muted-foreground'}`}>
+                            {participant.paid ? 'Paid' : 'Unpaid'}
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={3} className="pt-3 font-medium">Total</td>
-                    <td className="pt-3 text-right font-medium">
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell colSpan={3}>Total</TableCell>
+                    <TableCell className="text-right">
                       {formatCurrency(summary.session.bill.charges.total, summary.session.bill.currency)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {totalPaid > 0 && (
+                        <span className="text-sm text-green-600">
+                          {formatCurrency(totalPaid, summary.session.bill.currency)} paid
+                        </span>
+                      )}
+                      {totalUnpaid > 0 && totalPaid > 0 && <span className="mx-1">·</span>}
+                      {totalUnpaid > 0 && (
+                        <span className="text-sm text-muted-foreground">
+                          {formatCurrency(totalUnpaid, summary.session.bill.currency)} pending
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -212,6 +294,7 @@ const SummaryPage = () => {
               key={participant.id}
               participant={participant}
               currency={summary.session.bill.currency}
+              onTogglePayment={() => togglePaymentStatus(participant.id)}
             />
           ))}
         </div>

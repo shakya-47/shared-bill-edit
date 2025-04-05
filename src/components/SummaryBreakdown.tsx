@@ -3,18 +3,21 @@ import { ParticipantSummary } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/utils/calculations';
-import { CheckIcon } from 'lucide-react';
+import { CheckIcon, WalletCardsIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface SummaryBreakdownProps {
   participant: ParticipantSummary;
   showDetails?: boolean;
   currency: string;
+  onTogglePayment?: () => void;
 }
 
 const SummaryBreakdown = ({ 
   participant, 
   showDetails = true,
-  currency
+  currency,
+  onTogglePayment
 }: SummaryBreakdownProps) => {
   return (
     <Card className="animate-fade-in">
@@ -25,11 +28,21 @@ const SummaryBreakdown = ({
             <div className="text-sm text-muted-foreground">{participant.email}</div>
           )}
         </div>
-        {participant.paid && (
+        {participant.paid ? (
           <div className="bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300 text-xs font-medium px-2 py-1 rounded-full flex items-center">
             <CheckIcon className="h-3 w-3 mr-1" />
             Paid
           </div>
+        ) : onTogglePayment && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={onTogglePayment}
+            className="flex items-center text-xs"
+          >
+            <WalletCardsIcon className="h-3 w-3 mr-1" />
+            Mark as Paid
+          </Button>
         )}
       </CardHeader>
       
@@ -85,7 +98,7 @@ const SummaryBreakdown = ({
         
         <div className="flex justify-between font-medium">
           <span>Total Due</span>
-          <span className={`${participant.total > 0 ? "text-primary" : ""}`}>
+          <span className={`${participant.total > 0 ? participant.paid ? "text-green-600" : "text-primary" : ""}`}>
             {formatCurrency(participant.total, currency)}
           </span>
         </div>
