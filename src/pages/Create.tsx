@@ -5,11 +5,13 @@ import { toast } from 'sonner';
 import { Bill, Session, Participant } from '@/types';
 import { generateSessionId } from '@/utils/calculations';
 import BillForm from '@/components/BillForm';
+import BillUpload from '@/components/BillUpload';
 import ParticipantList from '@/components/ParticipantList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Create = () => {
   const navigate = useNavigate();
@@ -17,11 +19,17 @@ const Create = () => {
   const [bill, setBill] = useState<Bill | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [expiryMinutes, setExpiryMinutes] = useState<number>(30);
+  const [activeTab, setActiveTab] = useState<string>('manual');
   
   const handleSaveBill = (newBill: Bill) => {
     setBill(newBill);
     setStep('participants');
     window.scrollTo(0, 0);
+  };
+  
+  const handleBillParsed = (parsedBill: Bill) => {
+    setBill(parsedBill);
+    setActiveTab('manual'); // Switch to manual tab to show the parsed bill data
   };
   
   const createSession = () => {
@@ -63,12 +71,38 @@ const Create = () => {
         <h1 className="text-3xl font-bold mb-2">Create New Bill</h1>
         <p className="text-muted-foreground mb-8">
           {step === 'bill' 
-            ? 'Start by entering the bill details below'
+            ? 'Start by entering the bill details below or upload a receipt'
             : 'Now add participants who will share this bill'}
         </p>
         
         {step === 'bill' ? (
-          <BillForm onSave={handleSaveBill} />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-2 mb-6">
+              <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+              <TabsTrigger value="upload">Upload Receipt</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="manual">
+              <BillForm 
+                initialBill={bill || undefined} 
+                onSave={handleSaveBill} 
+              />
+            </TabsContent>
+            
+            <TabsContent value="upload">
+              <BillUpload onBillParsed={handleBillParsed} />
+              {bill && (
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Bill data has been extracted! Switch to Manual Entry tab to review and make changes if needed.
+                  </p>
+                  <Button onClick={() => handleSaveBill(bill)}>
+                    Continue with this bill
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         ) : (
           <div className="space-y-6 animate-fade-in">
             <ParticipantList 
