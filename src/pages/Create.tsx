@@ -62,7 +62,7 @@ const Create = () => {
     localStorage.setItem('splitSessions', JSON.stringify([...existingSessions, session]));
     
     toast.success('Session created successfully!');
-    navigate(`/session/${sessionId}`);
+    navigate(`/summary/${sessionId}`);
   };
   
   return (
@@ -85,7 +85,7 @@ const Create = () => {
             <TabsContent value="manual">
               <BillForm 
                 initialBill={bill || undefined} 
-                onSave={handleSaveBill} 
+                onSave={handleSaveBill}
               />
             </TabsContent>
             

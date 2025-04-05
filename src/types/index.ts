@@ -18,7 +18,6 @@ export interface BillCharges {
 }
 
 export interface Bill {
-  id: string;
   merchant: string;
   date: string;
   currency: string;
