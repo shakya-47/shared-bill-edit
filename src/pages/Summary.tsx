@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableFooter } from '@/components/ui/table';
 import SummaryBreakdown from '@/components/SummaryBreakdown';
-import { CheckIcon, AlertCircleIcon, WalletCardsIcon } from 'lucide-react';
+import { CheckIcon, AlertCircleIcon, WalletCardsIcon, LinkIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
 const SummaryPage = () => {
@@ -254,6 +254,20 @@ const SummaryPage = () => {
                           <span className={`text-sm ${participant.paid ? 'text-green-600' : 'text-muted-foreground'}`}>
                             {participant.paid ? 'Paid' : 'Unpaid'}
                           </span>
+                          {participant.submitted && participant.name !== 'Owner' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2"
+                              onClick={() => {
+                                const upiLink = 'upi://pay?pa=upiaddress@okhdfcbank&pn=JohnDoe&cu=INR';
+                                navigator.clipboard.writeText(upiLink);
+                                toast.success('Payment link copied to clipboard');
+                              }}
+                            >
+                              <LinkIcon className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

@@ -143,7 +143,9 @@ export const calculateSessionSummary = (
     tax: ownerTax,
     serviceCharge: ownerServiceCharge,
     discount: ownerDiscount,
-    total: ownerTotal
+    total: ownerTotal,
+    submitted: true,
+    paid: true
   });
 
   return {
