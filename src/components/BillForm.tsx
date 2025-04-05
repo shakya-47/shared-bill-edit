@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Bill, BillItem } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { TrashIcon, PlusIcon } from 'lucide-react';
 import { formatCurrency } from '@/utils/calculations';
+import { useNavigate } from 'react-router-dom';
 
 interface BillFormProps {
   initialBill?: Bill;
@@ -19,6 +19,7 @@ const emptyBill: Bill = {
   date: new Date().toISOString().split('T')[0],
   currency: 'INR',
   items: [],
+  id: '',
   charges: {
     subTotal: 0,
     tax: 0,
@@ -30,6 +31,7 @@ const emptyBill: Bill = {
 
 const BillForm = ({ initialBill = emptyBill, onSave }: BillFormProps) => {
   const [bill, setBill] = useState<Bill>(initialBill);
+  const navigate = useNavigate();
 
   const addItem = () => {
     const newItem: BillItem = {
@@ -114,6 +116,7 @@ const BillForm = ({ initialBill = emptyBill, onSave }: BillFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(bill);
+    navigate(`/summary/${bill.id}`);
   };
 
   // Update billing details
