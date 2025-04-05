@@ -95,7 +95,7 @@ const SessionPage = () => {
       setCurrentParticipant(existingParticipant);
       // Check if this participant has already submitted their selections
       if (existingParticipant.submitted) {
-        setSubmitted(true);
+        // setSubmitted(true);
         toast.info("You've already submitted your selections");
       } else {
         toast.success(`Welcome back, ${existingParticipant.name}!`);

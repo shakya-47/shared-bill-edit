@@ -1,4 +1,3 @@
-
 import { Bill, BillItem, Participant, ParticipantSelection, ParticipantSummary, SessionSummary } from '@/types';
 
 // Get participant's bill items based on their selections
@@ -47,8 +46,32 @@ export const calculateSessionSummary = (
   const participantSummaries: ParticipantSummary[] = [];
   let totalCalculatedAmount = 0;
 
-  // Calculate amount for each participant
-  participants.forEach((participant) => {
+  // First, calculate amounts for non-owner participants
+  const nonOwnerParticipants = participants.filter(p => p.name !== 'Owner');
+  const ownerParticipant = participants.find(p => p.name === 'Owner');
+
+  if (!ownerParticipant) {
+    return {
+      session: {
+        id: '',
+        bill,
+        organizer: '',
+        participants,
+        expiresAt: 0,
+        locked: false,
+        created: 0
+      },
+      participants: participantSummaries
+    };
+  }
+
+  // Calculate amounts for non-owner participants
+  let totalNonOwnerSubtotal = 0;
+  let totalNonOwnerTax = 0;
+  let totalNonOwnerServiceCharge = 0;
+  let totalNonOwnerDiscount = 0;
+
+  nonOwnerParticipants.forEach((participant) => {
     if (!participant.selections?.length) {
       // Participant hasn't selected anything
       participantSummaries.push({
@@ -88,6 +111,12 @@ export const calculateSessionSummary = (
     const total = subTotal + tax + serviceCharge - discount;
     totalCalculatedAmount += total;
 
+    // Add to totals for non-owner participants
+    totalNonOwnerSubtotal += subTotal;
+    totalNonOwnerTax += tax;
+    totalNonOwnerServiceCharge += serviceCharge;
+    totalNonOwnerDiscount += discount;
+
     participantSummaries.push({
       ...participant,
       items: participantItems,
@@ -99,20 +128,23 @@ export const calculateSessionSummary = (
     });
   });
 
-  // Handle rounding errors by adjusting the last participant's amount
-  const billTotal = bill.charges.total;
-  const roundingError = billTotal - totalCalculatedAmount;
-  
-  if (Math.abs(roundingError) > 0.01 && participantSummaries.length > 0) {
-    // Find participant with highest total to adjust
-    const highestTotalParticipant = [...participantSummaries]
-      .sort((a, b) => b.total - a.total)[0];
-    
-    const index = participantSummaries.findIndex(p => p.id === highestTotalParticipant.id);
-    if (index >= 0) {
-      participantSummaries[index].total += roundingError;
-    }
-  }
+  // Calculate owner's amounts (remaining amounts)
+  const ownerSubtotal = bill.charges.subTotal - totalNonOwnerSubtotal;
+  const ownerTax = bill.charges.tax - totalNonOwnerTax;
+  const ownerServiceCharge = bill.charges.serviceCharge - totalNonOwnerServiceCharge;
+  const ownerDiscount = bill.charges.discount - totalNonOwnerDiscount;
+  const ownerTotal = ownerSubtotal + ownerTax + ownerServiceCharge - ownerDiscount;
+
+  // Add owner's summary
+  participantSummaries.push({
+    ...ownerParticipant,
+    items: ownerParticipant.selections ? getParticipantItems(bill, ownerParticipant.selections) : [],
+    subTotal: ownerSubtotal,
+    tax: ownerTax,
+    serviceCharge: ownerServiceCharge,
+    discount: ownerDiscount,
+    total: ownerTotal
+  });
 
   return {
     session: {
