@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Participant } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,6 +16,17 @@ interface ParticipantListProps {
 const ParticipantList = ({ participants, onChange, showEmail = true }: ParticipantListProps) => {
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+
+  useEffect(() => {
+    if (participants.length === 0) {
+      const defaultOwner: Participant = {
+        id: `p${Date.now()}`,
+        name: 'Owner',
+        email: '',
+      };
+      onChange([defaultOwner]);
+    }
+  }, []);
 
   const addParticipant = () => {
     if (!newName.trim()) return;
